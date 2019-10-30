@@ -3,8 +3,8 @@
 # To compile with PKCS11: add "-lpkcs11-helper" to LDFLAGS
 
 CFLAGS	?= -O2
-WARNING_CFLAGS ?= -Wall -W -Wdeclaration-after-statement
-WARNING_CXXFLAGS ?= -Wall -W
+WARNING_CFLAGS ?= -Wall -Wextra
+WARNING_CXXFLAGS ?= -Wall -Wextra
 LDFLAGS ?=
 
 LOCAL_CFLAGS = $(WARNING_CFLAGS) -I../include -D_FILE_OFFSET_BITS=64
@@ -18,11 +18,10 @@ LOCAL_LDFLAGS += -L../crypto/library
 LOCAL_CFLAGS += -I../crypto/include
 LOCAL_CXXFLAGS += -I../crypto/include
 
-ifndef SHARED
-DEP=../crypto/library/libmbedcrypto.a ../library/libmbedx509.a ../library/libmbedtls.a
-else
-DEP=../crypto/library/libmbedcrypto.$(DLEXT) ../library/libmbedx509.$(DLEXT) ../library/libmbedtls.$(DLEXT)
-endif
+INCLUDING_FROM_MBEDTLS:=1
+include ../crypto/3rdparty/Makefile.inc
+LOCAL_CFLAGS += $(patsubst -I../3rdparty/%, -I../crypto/3rdparty/%, $(THIRDPARTY_INCLUDES))
+LOCAL_CFLAGS += $(patsubst -I../3rdparty/%, -I../crypto/3rdparty/%, $(THIRDPARTY_INCLUDES))
 
 ifdef DEBUG
 LOCAL_CFLAGS += -g3
@@ -44,6 +43,12 @@ else
 DLEXT ?= so
 EXEXT=
 SHARED_SUFFIX=
+endif
+
+ifndef SHARED
+DEP=../crypto/library/libmbedcrypto.a ../library/libmbedx509.a ../library/libmbedtls.a
+else
+DEP=../crypto/library/libmbedcrypto.$(DLEXT) ../library/libmbedx509.$(DLEXT) ../library/libmbedtls.$(DLEXT)
 endif
 
 # Zlib shared library extensions:
@@ -90,9 +95,18 @@ endif
 
 .SILENT:
 
-.PHONY: all clean list
+.PHONY: all clean list fuzz
 
 all: $(APPS)
+ifndef WINDOWS
+# APPS doesn't include the fuzzing programs, which aren't "normal"
+# sample or test programs, and don't build with MSVC which is
+# warning about fopen
+all: fuzz
+endif
+
+fuzz:
+	$(MAKE) -C fuzz THIRDPARTY_INCLUDES=$(THIRDPARTY_INCLUDES)
 
 $(DEP):
 	$(MAKE) -C ../library
@@ -303,8 +317,10 @@ ifndef WINDOWS
 	-rm -f ssl/ssl_pthread_server$(EXEXT)
 	-rm -f test/cpp_dummy_build$(EXEXT)
 else
-	del /S /Q /F *.o *.exe
+	if exist *.o del /Q /F *.o
+	if exist *.exe del /Q /F *.exe
 endif
+	$(MAKE) -C fuzz clean
 
 list:
 	echo $(APPS)

@@ -3,7 +3,7 @@
 # To compile with PKCS11: add "-lpkcs11-helper" to LDFLAGS
 
 CFLAGS	?= -O2
-WARNING_CFLAGS ?= -Wall -W -Wdeclaration-after-statement -Wunused
+WARNING_CFLAGS ?= -Wall -Wextra
 LDFLAGS ?=
 
 LOCAL_CFLAGS = $(WARNING_CFLAGS) -I../include -D_FILE_OFFSET_BITS=64
@@ -16,16 +16,14 @@ LOCAL_LDFLAGS += -L../crypto/library
 LOCAL_CFLAGS += -I../crypto/include
 CRYPTO := ../crypto/library/
 
+INCLUDING_FROM_MBEDTLS:=1
+include ../crypto/3rdparty/Makefile.inc
+LOCAL_CFLAGS += $(patsubst -I../3rdparty/%, -I../crypto/3rdparty/%, $(THIRDPARTY_INCLUDES))
+
 # Enable definition of various functions used throughout the testsuite
 # (gethostname, strdup, fileno...) even when compiling with -std=c99. Harmless
 # on non-POSIX platforms.
 LOCAL_CFLAGS += -D_POSIX_C_SOURCE=200809L
-
-ifndef SHARED
-DEP=$(CRYPTO)libmbedcrypto.a ../library/libmbedx509.a ../library/libmbedtls.a
-else
-DEP=$(CRYPTO)libmbedcrypto.$(DLEXT) ../library/libmbedx509.$(DLEXT) ../library/libmbedtls.$(DLEXT)
-endif
 
 ifdef DEBUG
 LOCAL_CFLAGS += -g3
@@ -50,6 +48,12 @@ EXEXT=
 SHARED_SUFFIX=
 # python2 for POSIX since FreeBSD has only python2 as default.
 PYTHON ?= python2
+endif
+
+ifndef SHARED
+DEP=$(CRYPTO)libmbedcrypto.a ../library/libmbedx509.a ../library/libmbedtls.a
+else
+DEP=$(CRYPTO)libmbedcrypto.$(DLEXT) ../library/libmbedx509.$(DLEXT) ../library/libmbedtls.$(DLEXT)
 endif
 
 # Zlib shared library extensions:
@@ -156,7 +160,9 @@ clean:
 ifndef WINDOWS
 	rm -rf $(BINARIES) *.c *.datax TESTS
 else
-	del /Q /F *.c *.exe *.datax
+	if exist *.c del /Q /F *.c
+	if exist *.exe del /Q /F *.exe
+	if exist *.datax del /Q /F *.datax
 ifneq ($(wildcard TESTS/.*),)
 	rmdir /Q /S TESTS
 endif
@@ -185,4 +191,3 @@ $(EMBEDDED_TESTS): embedded_%: suites/$$(firstword $$(subst ., ,$$*)).function s
 		-o ./TESTS/mbedtls/$*
 
 generate-target-tests: $(EMBEDDED_TESTS)
-

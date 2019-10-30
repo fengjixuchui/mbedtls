@@ -66,6 +66,8 @@ set(src_crypto
     xtea.c
 )
 
+list(APPEND src_crypto ${thirdparty_src})
+
 set(src_x509
     certs.c
     pkcs11.c
@@ -151,15 +153,15 @@ if(USE_STATIC_MBEDTLS_LIBRARY)
     set_target_properties(${mbedx509_static_target} PROPERTIES OUTPUT_NAME mbedx509)
     target_link_libraries(${mbedx509_static_target} ${libs} ${mbedcrypto_static_target})
     target_include_directories(${mbedx509_static_target}
-        PUBLIC ${CMAKE_SOURCE_DIR}/include/
-        PUBLIC ${CMAKE_SOURCE_DIR}/crypto/include/)
+        PUBLIC ${MBEDTLS_DIR}/include/
+        PUBLIC ${MBEDTLS_DIR}/crypto/include/)
 
     add_library(${mbedtls_static_target} STATIC ${src_tls})
     set_target_properties(${mbedtls_static_target} PROPERTIES OUTPUT_NAME mbedtls)
     target_link_libraries(${mbedtls_static_target} ${libs} ${mbedx509_static_target})
     target_include_directories(${mbedtls_static_target}
-        PUBLIC ${CMAKE_SOURCE_DIR}/include/
-        PUBLIC ${CMAKE_SOURCE_DIR}/crypto/include/
+        PUBLIC ${MBEDTLS_DIR}/include/
+        PUBLIC ${MBEDTLS_DIR}/crypto/include/
         )
 
 
@@ -172,18 +174,18 @@ endif(USE_STATIC_MBEDTLS_LIBRARY)
 if(USE_SHARED_MBEDTLS_LIBRARY)
 
     add_library(mbedx509 SHARED ${src_x509})
-    set_target_properties(mbedx509 PROPERTIES VERSION 2.17.0 SOVERSION 0)
+    set_target_properties(mbedx509 PROPERTIES VERSION 2.19.1 SOVERSION 1)
     target_link_libraries(mbedx509 ${libs} mbedcrypto)
     target_include_directories(mbedx509
-        PUBLIC ${CMAKE_SOURCE_DIR}/include/
-        PUBLIC ${CMAKE_SOURCE_DIR}/crypto/include/)
+        PUBLIC ${MBEDTLS_DIR}/include/
+        PUBLIC ${MBEDTLS_DIR}/crypto/include/)
 
     add_library(mbedtls SHARED ${src_tls})
-    set_target_properties(mbedtls PROPERTIES VERSION 2.17.0 SOVERSION 12)
+    set_target_properties(mbedtls PROPERTIES VERSION 2.19.1 SOVERSION 13)
     target_link_libraries(mbedtls ${libs} mbedx509)
     target_include_directories(mbedtls
-        PUBLIC ${CMAKE_SOURCE_DIR}/include/
-        PUBLIC ${CMAKE_SOURCE_DIR}/crypto/include/)
+        PUBLIC ${MBEDTLS_DIR}/include/
+        PUBLIC ${MBEDTLS_DIR}/crypto/include/)
 
       install(TARGETS mbedtls mbedx509
               DESTINATION ${LIB_INSTALL_DIR}
