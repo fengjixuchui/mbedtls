@@ -697,6 +697,45 @@ component_test_full_cmake_gcc_asan () {
     if_build_succeeded tests/compat.sh
 }
 
+component_test_zlib_make() {
+    msg "build: zlib enabled, make"
+    scripts/config.py set MBEDTLS_ZLIB_SUPPORT
+    make ZLIB=1 CFLAGS='-Werror -O1'
+
+    msg "test: main suites (zlib, make)"
+    make test
+
+    msg "test: ssl-opt.sh (zlib, make)"
+    if_build_succeeded tests/ssl-opt.sh
+}
+support_test_zlib_make () {
+    base=support_test_zlib_$$
+    cat <<'EOF' > ${base}.c
+#include "zlib.h"
+int main(void) { return 0; }
+EOF
+    gcc -o ${base}.exe ${base}.c -lz 2>/dev/null
+    ret=$?
+    rm -f ${base}.*
+    return $ret
+}
+
+component_test_zlib_cmake() {
+    msg "build: zlib enabled, cmake"
+    scripts/config.py set MBEDTLS_ZLIB_SUPPORT
+    cmake -D ENABLE_ZLIB_SUPPORT=On -D CMAKE_BUILD_TYPE:String=Check .
+    make
+
+    msg "test: main suites (zlib, cmake)"
+    make test
+
+    msg "test: ssl-opt.sh (zlib, cmake)"
+    if_build_succeeded tests/ssl-opt.sh
+}
+support_test_zlib_cmake () {
+    support_test_zlib_make "$@"
+}
+
 component_test_ref_configs () {
     msg "test/build: ref-configs (ASan build)" # ~ 6 min 20s
     CC=gcc cmake -D CMAKE_BUILD_TYPE:String=Asan .
@@ -860,6 +899,33 @@ component_build_deprecated () {
     make CC=clang CFLAGS='-O -Werror -Wall -Wextra -Wno-unused-function' tests
 }
 
+# Check that the specified libraries exist and are empty.
+are_empty_libraries () {
+  nm "$@" >/dev/null 2>/dev/null
+  ! nm "$@" 2>/dev/null | grep -v ':$' | grep .
+}
+
+component_build_crypto_default () {
+  msg "build: make, crypto only"
+  scripts/config.py crypto
+  make CFLAGS='-O1 -Werror'
+  if_build_succeeded are_empty_libraries library/libmbedx509.* library/libmbedtls.*
+}
+
+component_build_crypto_full () {
+  msg "build: make, crypto only, full config"
+  scripts/config.py crypto_full
+  make CFLAGS='-O1 -Werror'
+  if_build_succeeded are_empty_libraries library/libmbedx509.* library/libmbedtls.*
+}
+
+component_build_crypto_baremetal () {
+  msg "build: make, crypto only, baremetal config"
+  scripts/config.py crypto_baremetal
+  make CFLAGS='-O1 -Werror'
+  if_build_succeeded are_empty_libraries library/libmbedx509.* library/libmbedtls.*
+}
+
 component_test_depends_curves () {
     msg "test/build: curves.pl (gcc)" # ~ 4 min
     record_status tests/scripts/curves.pl
@@ -911,9 +977,6 @@ component_test_no_use_psa_crypto_full_cmake_asan() {
 
     msg "test: compat.sh default (full minus MBEDTLS_USE_PSA_CRYPTO)"
     if_build_succeeded tests/compat.sh
-
-    msg "test: compat.sh ssl3 (full minus MBEDTLS_USE_PSA_CRYPTO)"
-    if_build_succeeded env OPENSSL_CMD="$OPENSSL_LEGACY" tests/compat.sh -m 'ssl3'
 
     msg "test: compat.sh RC4, DES & NULL (full minus MBEDTLS_USE_PSA_CRYPTO)"
     if_build_succeeded env OPENSSL_CMD="$OPENSSL_LEGACY" GNUTLS_CLI="$GNUTLS_LEGACY_CLI" GNUTLS_SERV="$GNUTLS_LEGACY_SERV" tests/compat.sh -e '3DES\|DES-CBC3' -f 'NULL\|DES\|RC4\|ARCFOUR'
@@ -975,8 +1038,8 @@ component_test_no_platform () {
     scripts/config.py unset MBEDTLS_PSA_ITS_FILE_C
     # Note, _DEFAULT_SOURCE needs to be defined for platforms using glibc version >2.19,
     # to re-enable platform integration features otherwise disabled in C99 builds
-    make CC=gcc CFLAGS='-Werror -Wall -Wextra -std=c99 -pedantic -O0 -D_DEFAULT_SOURCE' lib programs
-    make CC=gcc CFLAGS='-Werror -Wall -Wextra -O0' test
+    make CC=gcc CFLAGS='-Werror -Wall -Wextra -std=c99 -pedantic -Os -D_DEFAULT_SOURCE' lib programs
+    make CC=gcc CFLAGS='-Werror -Wall -Wextra -Os' test
 }
 
 component_build_no_std_function () {
@@ -985,21 +1048,21 @@ component_build_no_std_function () {
     scripts/config.py full
     scripts/config.py set MBEDTLS_PLATFORM_NO_STD_FUNCTIONS
     scripts/config.py unset MBEDTLS_ENTROPY_NV_SEED
-    make CC=gcc CFLAGS='-Werror -Wall -Wextra -O0'
+    make CC=gcc CFLAGS='-Werror -Wall -Wextra -Os'
 }
 
 component_build_no_ssl_srv () {
     msg "build: full config except ssl_srv.c, make, gcc" # ~ 30s
     scripts/config.py full
     scripts/config.py unset MBEDTLS_SSL_SRV_C
-    make CC=gcc CFLAGS='-Werror -Wall -Wextra -O0'
+    make CC=gcc CFLAGS='-Werror -Wall -Wextra -O1'
 }
 
 component_build_no_ssl_cli () {
     msg "build: full config except ssl_cli.c, make, gcc" # ~ 30s
     scripts/config.py full
     scripts/config.py unset MBEDTLS_SSL_CLI_C
-    make CC=gcc CFLAGS='-Werror -Wall -Wextra -O0'
+    make CC=gcc CFLAGS='-Werror -Wall -Wextra -O1'
 }
 
 component_build_no_sockets () {
@@ -1009,7 +1072,7 @@ component_build_no_sockets () {
     scripts/config.py full
     scripts/config.py unset MBEDTLS_NET_C # getaddrinfo() undeclared, etc.
     scripts/config.py set MBEDTLS_NO_PLATFORM_ENTROPY # uses syscall() on GNU/Linux
-    make CC=gcc CFLAGS='-Werror -Wall -Wextra -O0 -std=c99 -pedantic' lib
+    make CC=gcc CFLAGS='-Werror -Wall -Wextra -O1 -std=c99 -pedantic' lib
 }
 
 component_test_memory_buffer_allocator_backtrace () {
@@ -1120,6 +1183,29 @@ component_test_platform_calloc_macro () {
     make test
 }
 
+component_test_malloc_0_null () {
+    msg "build: malloc(0) returns NULL (ASan+UBSan build)"
+    scripts/config.pl full
+    scripts/config.pl unset MBEDTLS_MEMORY_BUFFER_ALLOC_C
+    make CC=gcc CFLAGS="'-DMBEDTLS_CONFIG_FILE=\"$PWD/tests/configs/config-wrapper-malloc-0-null.h\"' -O -Werror -Wall -Wextra -fsanitize=address,undefined" LDFLAGS='-fsanitize=address,undefined'
+
+    msg "test: malloc(0) returns NULL (ASan+UBSan build)"
+    make test
+
+    msg "selftest: malloc(0) returns NULL (ASan+UBSan build)"
+    # Just the calloc selftest. "make test" ran the others as part of the
+    # test suites.
+    if_build_succeeded programs/test/selftest calloc
+
+    msg "test ssl-opt.sh: malloc(0) returns NULL (ASan+UBSan build)"
+    # Run a subset of the tests. The choice is a balance between coverage
+    # and time (including time indirectly wasted due to flaky tests).
+    # The current choice is to skip tests whose description includes
+    # "proxy", which is an approximation of skipping tests that use the
+    # UDP proxy, which tend to be slower and flakier.
+    if_build_succeeded tests/ssl-opt.sh -e 'proxy'
+}
+
 component_test_make_shared () {
     msg "build/test: make shared" # ~ 40s
     make SHARED=1 all check
@@ -1132,6 +1218,30 @@ component_test_cmake_shared () {
     make
     ldd programs/util/strerror | grep libmbedcrypto
     make test
+}
+
+test_build_opt () {
+    info=$1 cc=$2; shift 2
+    for opt in "$@"; do
+          msg "build/test: $cc $opt, $info" # ~ 30s
+          make CC="$cc" CFLAGS="$opt -Wall -Wextra -Werror"
+          # We're confident enough in compilers to not run _all_ the tests,
+          # but at least run the unit tests. In particular, runs with
+          # optimizations use inline assembly whereas runs with -O0
+          # skip inline assembly.
+          make test # ~30s
+          make clean
+    done
+}
+
+component_test_clang_opt () {
+    scripts/config.pl full
+    test_build_opt 'full config' clang -O0 -Os -O2
+}
+
+component_test_gcc_opt () {
+    scripts/config.pl full
+    test_build_opt 'full config' gcc -O0 -Os -O2
 }
 
 component_build_mbedtls_config_file () {

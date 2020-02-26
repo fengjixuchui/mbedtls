@@ -37,7 +37,7 @@ endif
 
 SOEXT_TLS=so.13
 SOEXT_X509=so.1
-SOEXT_CRYPTO=so.3
+SOEXT_CRYPTO=so.4
 
 # Set AR_DASH= (empty string) to use an ar implementation that does not accept
 # the - prefix for command line options (e.g. llvm-ar)
@@ -77,6 +77,7 @@ OBJS_X509=	certs.o		pkcs11.o	x509.o		\
 OBJS_TLS=	debug.o		net_sockets.o		\
 		ssl_cache.o	ssl_ciphersuites.o	\
 		ssl_cli.o	ssl_cookie.o		\
+		ssl_msg.o				\
 		ssl_srv.o	ssl_ticket.o		\
 		ssl_tls.o
 

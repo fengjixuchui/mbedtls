@@ -233,27 +233,27 @@
 /**
  * \def MBEDTLS_DEPRECATED_WARNING
  *
- * Mark deprecated functions so that they generate a warning if used.
- * Functions deprecated in one version will usually be removed in the next
- * version. You can enable this to help you prepare the transition to a new
- * major version by making sure your code is not using these functions.
+ * Mark deprecated functions and features so that they generate a warning if
+ * used. Functionality deprecated in one version will usually be removed in the
+ * next version. You can enable this to help you prepare the transition to a
+ * new major version by making sure your code is not using this functionality.
  *
  * This only works with GCC and Clang. With other compilers, you may want to
  * use MBEDTLS_DEPRECATED_REMOVED
  *
- * Uncomment to get warnings on using deprecated functions.
+ * Uncomment to get warnings on using deprecated functions and features.
  */
 //#define MBEDTLS_DEPRECATED_WARNING
 
 /**
  * \def MBEDTLS_DEPRECATED_REMOVED
  *
- * Remove deprecated functions so that they generate an error if used.
- * Functions deprecated in one version will usually be removed in the next
- * version. You can enable this to help you prepare the transition to a new
- * major version by making sure your code is not using these functions.
+ * Remove deprecated functions and features so that they generate an error if
+ * used. Functionality deprecated in one version will usually be removed in the
+ * next version. You can enable this to help you prepare the transition to a
+ * new major version by making sure your code is not using this functionality.
  *
- * Uncomment to get errors on using deprecated functions.
+ * Uncomment to get errors on using deprecated functions and features.
  */
 //#define MBEDTLS_DEPRECATED_REMOVED
 
@@ -1527,6 +1527,9 @@
  * Enable hooking functions in SSL module for hardware acceleration of
  * individual records.
  *
+ * \deprecated This option is deprecated and will be removed in a future
+ *             version of Mbed TLS.
+ *
  * Uncomment this macro to enable hooking functions.
  */
 //#define MBEDTLS_SSL_HW_RECORD_ACCEL
@@ -1571,6 +1574,9 @@
  * Enable support for receiving and parsing SSLv2 Client Hello messages for the
  * SSL Server module (MBEDTLS_SSL_SRV_C).
  *
+ * \deprecated This option is deprecated and will be removed in a future
+ *             version of Mbed TLS.
+ *
  * Uncomment this macro to enable support for SSLv2 Client Hello messages.
  */
 //#define MBEDTLS_SSL_SRV_SUPPORT_SSLV2_CLIENT_HELLO
@@ -1601,6 +1607,9 @@
  *
  * Requires: MBEDTLS_MD5_C
  *           MBEDTLS_SHA1_C
+ *
+ * \deprecated This option is deprecated and will be removed in a future
+ *             version of Mbed TLS.
  *
  * Comment this macro to disable support for SSL 3.0
  */
@@ -1775,8 +1784,8 @@
  *
  * Fallback to old (pre-2.7), non-conforming implementation of the truncated
  * HMAC extension which also truncates the HMAC key. Note that this option is
- * only meant for a transitory upgrade period and is likely to be removed in
- * a future version of the library.
+ * only meant for a transitory upgrade period and will be removed in a future
+ * version of the library.
  *
  * \warning The old implementation is non-compliant and has a security weakness
  *          (2^80 brute force attack on the HMAC key used for a single,
@@ -1785,7 +1794,7 @@
  *          bandwidth, and (2) the peer is an Mbed TLS stack that doesn't use
  *          the fixed implementation yet (pre-2.7).
  *
- * \deprecated This option is deprecated and will likely be removed in a
+ * \deprecated This option is deprecated and will be removed in a
  *             future version of Mbed TLS.
  *
  * Uncomment to fallback to old, non-compliant truncated HMAC implementation.
@@ -2812,7 +2821,10 @@
 /**
  * \def MBEDTLS_PKCS11_C
  *
- * Enable wrapper for PKCS#11 smartcard support.
+ * Enable wrapper for PKCS#11 smartcard support via the pkcs11-helper library.
+ *
+ * \deprecated This option is deprecated and will be removed in a future
+ *             version of Mbed TLS.
  *
  * Module:  library/pkcs11.c
  * Caller:  library/pk.c
