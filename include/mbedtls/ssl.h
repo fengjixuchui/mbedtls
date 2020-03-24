@@ -825,7 +825,7 @@ typedef int mbedtls_ssl_async_resume_t( mbedtls_ssl_context *ssl,
 typedef void mbedtls_ssl_async_cancel_t( mbedtls_ssl_context *ssl );
 #endif /* MBEDTLS_SSL_ASYNC_PRIVATE */
 
-#if defined(MBEDTLS_KEY_EXCHANGE__WITH_CERT__ENABLED) &&        \
+#if defined(MBEDTLS_KEY_EXCHANGE_WITH_CERT_ENABLED) &&        \
     !defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE)
 #define MBEDTLS_SSL_PEER_CERT_DIGEST_MAX_LEN  48
 #if defined(MBEDTLS_SHA256_C)
@@ -841,7 +841,7 @@ typedef void mbedtls_ssl_async_cancel_t( mbedtls_ssl_context *ssl );
 /* This is already checked in check_config.h, but be sure. */
 #error "Bad configuration - need SHA-1, SHA-256 or SHA-512 enabled to compute digest of peer CRT."
 #endif
-#endif /* MBEDTLS_KEY_EXCHANGE__WITH_CERT__ENABLED &&
+#endif /* MBEDTLS_KEY_EXCHANGE_WITH_CERT_ENABLED &&
           !MBEDTLS_SSL_KEEP_PEER_CERTIFICATE */
 
 /*
@@ -937,7 +937,7 @@ struct mbedtls_ssl_config
     void *p_vrfy;                   /*!< context for X.509 verify calllback */
 #endif
 
-#if defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED)
+#if defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
     /** Callback to retrieve PSK key from identity                          */
     int (*f_psk)(void *, mbedtls_ssl_context *, const unsigned char *, size_t);
     void *p_psk;                    /*!< context for PSK callback           */
@@ -1000,7 +1000,7 @@ struct mbedtls_ssl_config
     void *p_async_config_data; /*!< Configuration data set by mbedtls_ssl_conf_async_private_cb(). */
 #endif /* MBEDTLS_SSL_ASYNC_PRIVATE */
 
-#if defined(MBEDTLS_KEY_EXCHANGE__WITH_CERT__ENABLED)
+#if defined(MBEDTLS_KEY_EXCHANGE_WITH_CERT_ENABLED)
     const int *sig_hashes;          /*!< allowed signature hashes           */
 #endif
 
@@ -1013,7 +1013,7 @@ struct mbedtls_ssl_config
     mbedtls_mpi dhm_G;              /*!< generator for DHM                  */
 #endif
 
-#if defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED)
+#if defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
 
 #if defined(MBEDTLS_USE_PSA_CRYPTO)
     psa_key_handle_t psk_opaque; /*!< PSA key slot holding opaque PSK.
@@ -1044,7 +1044,7 @@ struct mbedtls_ssl_config
                                      *   Its value is non-zero if and only if
                                      *   \c psk is not \c NULL or \c psk_opaque
                                      *   is not \c 0. */
-#endif /* MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED */
+#endif /* MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED */
 
 #if defined(MBEDTLS_SSL_ALPN)
     const char **alpn_list;         /*!< ordered list of protocols          */
@@ -1215,6 +1215,9 @@ struct mbedtls_ssl_context
     int in_msgtype;             /*!< record header: message type      */
     size_t in_msglen;           /*!< record header: message length    */
     size_t in_left;             /*!< amount of data read so far       */
+#if defined(MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH)
+    size_t in_buf_len;          /*!< length of input buffer           */
+#endif
 #if defined(MBEDTLS_SSL_PROTO_DTLS)
     uint16_t in_epoch;          /*!< DTLS epoch for incoming records  */
     size_t next_record_offset;  /*!< offset of the next record in datagram
@@ -1254,6 +1257,9 @@ struct mbedtls_ssl_context
     int out_msgtype;            /*!< record header: message type      */
     size_t out_msglen;          /*!< record header: message length    */
     size_t out_left;            /*!< amount of data not yet written   */
+#if defined(MBEDTLS_SSL_VARIABLE_BUFFER_LENGTH)
+    size_t out_buf_len;         /*!< length of output buffer          */
+#endif
 
     unsigned char cur_out_ctr[8]; /*!<  Outgoing record sequence  number. */
 
@@ -2668,7 +2674,7 @@ int mbedtls_ssl_conf_own_cert( mbedtls_ssl_config *conf,
                               mbedtls_pk_context *pk_key );
 #endif /* MBEDTLS_X509_CRT_PARSE_C */
 
-#if defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED)
+#if defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
 /**
  * \brief          Configure a pre-shared key (PSK) and identity
  *                 to be used in PSK-based ciphersuites.
@@ -2815,7 +2821,7 @@ void mbedtls_ssl_conf_psk_cb( mbedtls_ssl_config *conf,
                      int (*f_psk)(void *, mbedtls_ssl_context *, const unsigned char *,
                                   size_t),
                      void *p_psk );
-#endif /* MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED */
+#endif /* MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED */
 
 #if defined(MBEDTLS_DHM_C) && defined(MBEDTLS_SSL_SRV_C)
 
@@ -2920,7 +2926,7 @@ void mbedtls_ssl_conf_curves( mbedtls_ssl_config *conf,
                               const mbedtls_ecp_group_id *curves );
 #endif /* MBEDTLS_ECP_C */
 
-#if defined(MBEDTLS_KEY_EXCHANGE__WITH_CERT__ENABLED)
+#if defined(MBEDTLS_KEY_EXCHANGE_WITH_CERT_ENABLED)
 /**
  * \brief          Set the allowed hashes for signatures during the handshake.
  *                 (Default: all available hashes except MD5.)
@@ -2941,7 +2947,7 @@ void mbedtls_ssl_conf_curves( mbedtls_ssl_config *conf,
  */
 void mbedtls_ssl_conf_sig_hashes( mbedtls_ssl_config *conf,
                                   const int *hashes );
-#endif /* MBEDTLS_KEY_EXCHANGE__WITH_CERT__ENABLED */
+#endif /* MBEDTLS_KEY_EXCHANGE_WITH_CERT_ENABLED */
 
 #if defined(MBEDTLS_X509_CRT_PARSE_C)
 /**
@@ -3733,7 +3739,14 @@ int mbedtls_ssl_renegotiate( mbedtls_ssl_context *ssl );
  *
  * \return         The (positive) number of bytes read if successful.
  * \return         \c 0 if the read end of the underlying transport was closed
- *                 - in this case you must stop using the context (see below).
+ *                 without sending a CloseNotify beforehand, which might happen
+ *                 because of various reasons (internal error of an underlying
+ *                 stack, non-conformant peer not sending a CloseNotify and
+ *                 such) - in this case you must stop using the context
+ *                 (see below).
+ * \return         #MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY if the underlying
+ *                 transport is still functional, but the peer has
+ *                 acknowledged to not send anything anymore.
  * \return         #MBEDTLS_ERR_SSL_WANT_READ or #MBEDTLS_ERR_SSL_WANT_WRITE
  *                 if the handshake is incomplete and waiting for data to
  *                 be available for reading from or writing to the underlying
